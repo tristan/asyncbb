@@ -12,6 +12,19 @@ from . import database
 from tornado.log import access_log
 from .log import log
 
+# verify python version
+if sys.version_info[:2] != (3, 5):
+    print("Requires python version 3.5")
+    sys.exit(1)
+
+# install asyncio io loop (NOTE: must be done before app creation
+# as the autoreloader will also install one
+tornado.platform.asyncio.AsyncIOMainLoop().install()
+
+# extra tornado config options
+tornado.options.define("config", default="config-localhost.ini", help="configuration file")
+tornado.options.define("port", default=8888, help="port to listen on")
+
 async def prepare_database(db_config):
 
     connection_pool = await asyncpg.create_pool(**db_config)
@@ -40,8 +53,6 @@ class Application(tornado.web.Application):
 
     def process_config(self):
 
-        tornado.options.define("config", default="config-localhost.ini", help="configuration file")
-        tornado.options.define("port", default=8888, help="port to listen on")
         tornado.options.parse_command_line()
 
         config = configparser.ConfigParser()
@@ -73,15 +84,6 @@ class Application(tornado.web.Application):
         return config
 
     def start(self):
-        # verify python version
-        if sys.version_info[:2] != (3, 5):
-            print("Requires python version 3.5")
-            sys.exit(1)
-
-        # install asyncio io loop (NOTE: must be done before app creation
-        # as the autoreloader will also install one
-        tornado.platform.asyncio.AsyncIOMainLoop().install()
-
         self.listen(tornado.options.options.port, xheaders=True)
         log.info("Starting HTTP Server on port: {}".format(tornado.options.options.port))
         self.asyncio_loop.run_forever()
