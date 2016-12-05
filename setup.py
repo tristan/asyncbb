@@ -10,10 +10,13 @@ setup(
     description='Basic service setup using tornado and asyncpg',
     long_description=open('README.md').read(),
     install_requires=[
-        'tornado==4.4.2',
-        'asyncpg==0.7.0'
+        'tornado==4.4.2'
     ],
+    setup_requires=['pytest-runner'],
     tests_require=[
-        'testing.postgresql==1.3.0'
+        'pytest',
+        'testing.postgresql==1.3.0',
+        'asyncpg==0.7.0',
+        'redis==2.10.5'
     ]
 )

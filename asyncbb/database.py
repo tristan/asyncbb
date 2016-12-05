@@ -5,7 +5,20 @@ from collections import ItemsView
 from .errors import DatabaseError
 from .log import log
 
+async def prepare_database(db_config):
+
+    connection_pool = await asyncpg.create_pool(**db_config)
+    async with connection_pool.acquire() as con:
+        await create_tables(con)
+
+    return connection_pool
+
 async def create_tables(con):
+
+    # make sure the create tables script exists
+    if not os.path.exists("sql/create_tables.sql"):
+        log.warning("Missing sql/create_tables.sql: cannot initialise database")
+        return
 
     try:
         row = await con.fetchrow("SELECT version_number FROM database_version LIMIT 1")
@@ -14,7 +27,6 @@ async def create_tables(con):
     except asyncpg.exceptions.UndefinedTableError:
 
         # fresh database, nothing to migrate
-
         with open("sql/create_tables.sql") as create_tables_file:
 
             sql = create_tables_file.read()
@@ -170,7 +182,6 @@ class HandlerDatabasePoolContext():
             raise DatabaseError(resp)
         return resp
 
-
 def with_database(fn):
     async def wrapper(self, *args, **kwargs):
         async with self.db:
@@ -179,3 +190,10 @@ def with_database(fn):
                 r = await r
             return r
     return wrapper
+
+class DatabaseMixin:
+    @property
+    def db(self):
+        if not hasattr(self, '_dbcontext'):
+            self._dbcontext = HandlerDatabasePoolContext(self, self.application.connection_pool)
+        return self._dbcontext

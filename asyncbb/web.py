@@ -1,5 +1,4 @@
 import asyncio
-import asyncpg
 import configparser
 import os
 import tornado.ioloop
@@ -7,10 +6,11 @@ import tornado.options
 import tornado.web
 import sys
 import urllib
-from . import database
 
 from tornado.log import access_log
 from .log import log
+
+import asyncbb.handlers
 
 # verify python version
 if sys.version_info[:2] != (3, 5):
@@ -25,14 +25,6 @@ tornado.platform.asyncio.AsyncIOMainLoop().install()
 tornado.options.define("config", default="config-localhost.ini", help="configuration file")
 tornado.options.define("port", default=8888, help="port to listen on")
 
-async def prepare_database(db_config):
-
-    connection_pool = await asyncpg.create_pool(**db_config)
-    async with connection_pool.acquire() as con:
-        await database.create_tables(con)
-
-    return connection_pool
-
 class Application(tornado.web.Application):
 
     def __init__(self, urls, config=None, **kwargs):
@@ -46,10 +38,15 @@ class Application(tornado.web.Application):
 
         self.asyncio_loop = asyncio.get_event_loop()
         if 'database' in self.config:
+            from .database import prepare_database
             self.connection_pool = self.asyncio_loop.run_until_complete(
                 prepare_database(self.config['database']))
         else:
             self.connection_pool = None
+
+        if 'redis' in self.config:
+            from .redis import prepare_redis
+            self.redis_connection_pool = prepare_redis(self.config['redis'])
 
     def process_config(self):
 
@@ -78,8 +75,9 @@ class Application(tornado.web.Application):
                     config['database']['password'] = p.password
             else:
                 config['database'] = {'dsn': os.environ['DATABASE_URL']}
-        elif 'database' not in config:
-            raise Exception("Missing database configuration")
+
+        if 'REDIS_URL' in os.environ:
+            config['redis'] = {'url': os.environ['REDIS_URL']}
 
         return config
 

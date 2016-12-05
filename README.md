@@ -2,6 +2,13 @@
 
 framework for tornado/asyncpg based services
 
+# Optional Libraries
+
+These must be manually installed if you wish to use them
+
+* `asyncpg==0.7.0`
+* `redis==2.10.5`
+
 # Example application
 
 `sql/create_tables.sql`
@@ -45,6 +52,14 @@ DATABASE_URL=postgres://`whoami`@/`whoami` env/bin/python app.py
 ```
 
 open http://localhost:8888
+
+# Running tests
+
+requires postgres and redis are installed on the system
+
+```
+python3 setup.py test
+```
 
 # Using Test base
 

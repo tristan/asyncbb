@@ -2,18 +2,11 @@ import tornado.escape
 import tornado.web
 import traceback
 
-from .database import HandlerDatabasePoolContext
 from .errors import JSONHTTPError
 
 DEFAULT_JSON_ARGUMENT = object()
 
 class BaseHandler(tornado.web.RequestHandler):
-
-    @property
-    def db(self):
-        if not hasattr(self, '_dbcontext'):
-            self._dbcontext = HandlerDatabasePoolContext(self, self.application.connection_pool)
-        return self._dbcontext
 
     @property
     def json(self):
