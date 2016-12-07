@@ -10,8 +10,6 @@ import urllib
 from tornado.log import access_log
 from .log import log
 
-import asyncbb.handlers
-
 # verify python version
 if sys.version_info[:2] != (3, 5):
     print("Requires python version 3.5")

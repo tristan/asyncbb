@@ -16,6 +16,7 @@ setup(
     tests_require=[
         'pytest',
         'testing.postgresql==1.3.0',
+        'testing.redis==1.1.1',
         'asyncpg==0.7.0',
         'redis==2.10.5'
     ]
