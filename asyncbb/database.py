@@ -5,9 +5,33 @@ from collections import ItemsView
 from .errors import DatabaseError
 from .log import log
 
+class SafePool(asyncpg.pool.Pool):
+    """changes the connection acquire implementation to deal with connections
+    disconnecting when not in use"""
+
+    async def _acquire_impl(self):
+        while True:
+            con = await super(SafePool, self)._acquire_impl()
+            if con.is_closed():
+                await self.release(con)
+            else:
+                return con
+
+def create_pool(dsn=None, *,
+                min_size=10,
+                max_size=10,
+                max_queries=50000,
+                setup=None,
+                loop=None,
+                **connect_kwargs):
+    return SafePool(dsn,
+                    min_size=min_size, max_size=max_size,
+                    max_queries=max_queries, loop=loop, setup=setup,
+                    **connect_kwargs)
+
 async def prepare_database(db_config):
 
-    connection_pool = await asyncpg.create_pool(**db_config)
+    connection_pool = await create_pool(**db_config)
     async with connection_pool.acquire() as con:
         await create_tables(con)
 
