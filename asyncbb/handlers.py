@@ -3,6 +3,7 @@ import tornado.web
 import traceback
 
 from .errors import JSONHTTPError
+from .log import log
 
 DEFAULT_JSON_ARGUMENT = object()
 
@@ -36,4 +37,5 @@ class BaseHandler(tornado.web.RequestHandler):
             # if we're in debug mode, add the exception data to the response
             if self.application.config['general'].getboolean('debug'):
                 rval['exc_info'] = traceback.format_exception(*kwargs["exc_info"])
+        log.error(rval)
         self.write(rval)

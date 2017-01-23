@@ -2,4 +2,4 @@ import logging
 
 logging.basicConfig()
 
-log = logging.getLogger("token.log")
+log = logging.getLogger("asyncbb.log")
