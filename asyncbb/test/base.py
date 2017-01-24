@@ -51,4 +51,15 @@ class AsyncHandlerTest(AsyncHTTPTestCase):
         # default raise_error to false
         if 'raise_error' not in kwargs:
             kwargs['raise_error'] = False
+
         return self.http_client.fetch(self.get_url(req), self.stop, **kwargs)
+
+    def assertResponseCodeEqual(self, response, expected_code, message=None):
+        """Asserts that the response code was what was expected, with the addition
+        that if a 599 is returned (either a timeout or a local exception it will
+        rethrow that exception"""
+
+        if response.code == 599 and expected_code != 599:
+            response.rethrow()
+
+        self.assertEqual(response.code, expected_code, message)
