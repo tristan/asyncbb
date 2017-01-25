@@ -11,8 +11,8 @@ from tornado.log import access_log
 from .log import log
 
 # verify python version
-if sys.version_info[:2] != (3, 5):
-    print("Requires python version 3.5")
+if sys.version_info[:2] < (3, 5):
+    print("Requires python version 3.5 or greater")
     sys.exit(1)
 
 # install asyncio io loop (NOTE: must be done before app creation
