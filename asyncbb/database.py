@@ -50,12 +50,34 @@ async def create_tables(con):
         log.info("got database version: {}".format(version))
     except asyncpg.exceptions.UndefinedTableError:
 
+        # fresh DB path
+
+        await con.execute("CREATE TABLE database_version (version_number INTEGER)")
+        await con.execute("INSERT INTO database_version (version_number) VALUES (0)")
+
         # fresh database, nothing to migrate
         with open("sql/create_tables.sql") as create_tables_file:
 
             sql = create_tables_file.read()
 
-            return await con.execute(sql)
+            await con.execute(sql)
+
+        # verify that if there are any migration scripts, that the
+        # database_version table has been updated appropriately
+        version = 0
+        while True:
+            version += 1
+            if not os.path.exists("sql/migrate_{:08}.sql".format(version)):
+                version -= 1
+                break
+
+        if version > 0:
+            row = await con.fetchrow("SELECT version_number FROM database_version LIMIT 1")
+            if row['version_number'] != version:
+                log.warning("Warning, migration scripts exist but database version has not been set in create_tables.sql")
+                log.warning("DB version: {}, latest migration script: {}".format(row['version_number'], version))
+
+        return
 
     # check for migration files
 
