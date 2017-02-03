@@ -44,11 +44,12 @@ def requires_redis(func=None):
 
             self.redis = redis.StrictRedis(connection_pool=self._app.redis_connection_pool)
 
-            f = fn(self, *args, **kwargs)
-            if asyncio.iscoroutine(f):
-                await f
-
-            shutdown_process(process)
+            try:
+                f = fn(self, *args, **kwargs)
+                if asyncio.iscoroutine(f):
+                    await f
+            finally:
+                shutdown_process(process)
 
         return wrapper
 
