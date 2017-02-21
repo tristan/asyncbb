@@ -32,7 +32,12 @@ class Application(tornado.web.Application):
         else:
             self.config = self.process_config()
 
-        super(Application, self).__init__(urls, debug=self.config['general'].getboolean('debug'), **kwargs)
+        cookie_secret = kwargs.pop('cookie_secret', None)
+        if cookie_secret is None:
+            cookie_secret = self.config['general'].get('cookie_secret', None)
+
+        super(Application, self).__init__(urls, debug=self.config['general'].getboolean('debug'),
+                                          cookie_secret=cookie_secret, **kwargs)
 
         self.asyncio_loop = asyncio.get_event_loop()
         if 'database' in self.config:
@@ -76,6 +81,9 @@ class Application(tornado.web.Application):
 
         if 'REDIS_URL' in os.environ:
             config['redis'] = {'url': os.environ['REDIS_URL']}
+
+        if 'COOKIE_SECRET' in os.environ:
+            config['general']['cookie_secret'] = os.environ['COOKIE_SECRET']
 
         return config
 
