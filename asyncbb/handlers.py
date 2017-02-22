@@ -7,7 +7,7 @@ from .log import log
 
 DEFAULT_JSON_ARGUMENT = object()
 
-class BaseHandler(tornado.web.RequestHandler):
+class JsonBodyMixin:
 
     @property
     def json(self):
@@ -22,6 +22,8 @@ class BaseHandler(tornado.web.RequestHandler):
                 raise JSONHTTPError(400, "missing_arguments")
             return default
         return self.json[name]
+
+class BaseHandler(JsonBodyMixin, tornado.web.RequestHandler):
 
     def write_error(self, status_code, **kwargs):
         """Overrides tornado's default error writing handler to return json data instead of a html template"""
