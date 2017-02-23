@@ -8,8 +8,9 @@ log = logging.getLogger("asyncbb.log")
 
 class SlackLogHandler(logging.Handler):
     """A logging handler that sends error messages to slack"""
-    def __init__(self, endpoints, client_class=tornado.httpclient.AsyncHTTPClient):
+    def __init__(self, name, endpoints, client_class=tornado.httpclient.AsyncHTTPClient):
         logging.Handler.__init__(self)
+        self.name = name
         if isinstance(endpoints, dict):
             default = endpoints['default'] if 'default' in endpoints else None
             debug = endpoints['debug'] if 'debug' in endpoints else default
@@ -44,7 +45,7 @@ class SlackLogHandler(logging.Handler):
         json = tornado.escape.json_encode(dict(
             text=text,
             unfurl_links=False,
-            username="TokenAdBot",
+            username=self.name,
             icon_url=icon
         ))
         body = urllib.parse.urlencode(dict(payload=json))
