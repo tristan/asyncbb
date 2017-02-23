@@ -14,6 +14,8 @@ def requires_database(func=None):
             psql = POSTGRESQL_FACTORY()
             self.pool = self._app.connection_pool = await prepare_database(psql.dsn())
 
+            self._app.config['database'] = psql.dsn()
+
             try:
                 f = fn(self, *args, **kwargs)
                 if asyncio.iscoroutine(f):

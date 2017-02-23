@@ -36,6 +36,8 @@ def requires_redis(func=None):
 
             process, config = start_redis()
 
+            self._app.config['redis'] = config
+
             self._app.redis_connection_pool = redis.ConnectionPool(
                 connection_class=redis.connection.UnixDomainSocketConnection,
                 decode_responses=True,
