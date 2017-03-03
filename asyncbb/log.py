@@ -3,12 +3,11 @@ import tornado.httpclient
 import urllib
 
 logging.basicConfig()
-
 log = logging.getLogger("asyncbb.log")
 
 class SlackLogHandler(logging.Handler):
     """A logging handler that sends error messages to slack"""
-    def __init__(self, name, endpoints, client_class=tornado.httpclient.AsyncHTTPClient):
+    def __init__(self, name, endpoints, level=None, client_class=tornado.httpclient.AsyncHTTPClient):
         logging.Handler.__init__(self)
         self.name = name
         if isinstance(endpoints, dict):
@@ -28,8 +27,13 @@ class SlackLogHandler(logging.Handler):
             logging.CRITICAL: critical
         }
         self.client_class = client_class
+        self.min_level = level
 
     def emit(self, record):
+
+        if self.min_level and record.levelno < self.min_level:
+            return
+
         client = self.client_class()
         text = self.format(record)
 
@@ -57,3 +61,13 @@ class SlackLogHandler(logging.Handler):
         for endpoint in endpoints:
             request = tornado.httpclient.HTTPRequest(endpoint, method="POST", headers=None, body=body)
             client.fetch(request)
+
+def configure_logger(logger, send_to_slack=True):
+    """Used to configure a new logger using the defaults
+    loaded in the config"""
+
+    logger.setLevel(log.level)
+    if send_to_slack:
+        for handler in log.handlers:
+            if isinstance(handler, SlackLogHandler):
+                logger.addHandler(handler)

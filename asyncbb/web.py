@@ -1,5 +1,6 @@
 import asyncio
 import configparser
+import logging
 import os
 import tornado.ioloop
 import tornado.options
@@ -7,8 +8,9 @@ import tornado.web
 import sys
 import urllib
 
-from tornado.log import access_log
-from .log import log
+from configparser import SectionProxy
+from .log import log, SlackLogHandler, configure_logger
+from tornado.log import app_log, access_log, gen_log
 
 # verify python version
 if sys.version_info[:2] < (3, 5):
@@ -84,6 +86,33 @@ class Application(tornado.web.Application):
 
         if 'COOKIE_SECRET' in os.environ:
             config['general']['cookie_secret'] = os.environ['COOKIE_SECRET']
+
+        if 'SLACK_LOG_URL' in os.environ:
+            config.setdefault('logging', SectionProxy(config, 'logging'))['slack_webhook_url'] = os.environ['SLACK_LOG_URL']
+        if 'logging' in config and 'slack_webhook_url' in config['logging']:
+            if 'SLACK_LOG_USERNAME' in os.environ:
+                config['logging']['slack_log_username'] = os.environ['SLACK_LOG_USERNAME']
+            if 'SLACK_LOG_LEVEL' in os.environ:
+                config['logging']['slack_log_level'] = os.environ['SLACK_LOG_LEVEL']
+            handler = SlackLogHandler(config['logging'].get('slack_log_username', None),
+                                      {'default': config['logging']['slack_webhook_url']},
+                                      level=config['logging'].get('slack_log_level', None))
+            log.addHandler(handler)
+
+        if 'LOG_LEVEL' in os.environ:
+            config.setdefault('logging', SectionProxy(config, 'logging'))['level'] = os.environ['LOG_LEVEL']
+
+        if 'logging' in config and 'level' in config['logging']:
+            level = getattr(logging, config['logging']['level'].upper(), None)
+            if level:
+                log.setLevel(level)
+            else:
+                log.warning("log level is set in config but does not match one of `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`")
+
+        # configure default torando loggers
+        configure_logger(app_log)
+        configure_logger(gen_log)
+        configure_logger(access_log)
 
         return config
 

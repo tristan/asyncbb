@@ -25,6 +25,16 @@ class JsonBodyMixin:
 
 class BaseHandler(JsonBodyMixin, tornado.web.RequestHandler):
 
+    def prepare(self):
+
+        # log the full request and headers if the log level is set to debug
+        if log.level == 10:
+            log.debug("Preparing request: {} {}".format(self.request.method, self.request.path))
+            for k, v in self.request.headers.items():
+                log.debug("{}: {}".format(k, v))
+
+        return super().prepare()
+
     def write_error(self, status_code, **kwargs):
         """Overrides tornado's default error writing handler to return json data instead of a html template"""
         rval = {'type': 'error', 'payload': {}}
