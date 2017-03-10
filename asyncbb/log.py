@@ -60,7 +60,7 @@ class SlackLogHandler(logging.Handler):
             endpoints = [endpoints]
         for endpoint in endpoints:
             request = tornado.httpclient.HTTPRequest(endpoint, method="POST", headers=None, body=body)
-            client.fetch(request)
+            client.fetch(request, raise_error=False)
 
 def configure_logger(logger, send_to_slack=True):
     """Used to configure a new logger using the defaults
