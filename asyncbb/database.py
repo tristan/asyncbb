@@ -23,7 +23,12 @@ def create_pool(dsn=None, *,
                 max_queries=50000,
                 setup=None,
                 loop=None,
+                init=None,
                 **connect_kwargs):
+    if '_init' in asyncpg.pool.Pool.__slots__:
+        connect_kwargs['init'] = init
+    elif init is not None:
+        raise DatabaseError("init only supported in asyncpg versions 0.9.0 and up")
     return SafePool(dsn,
                     min_size=min_size, max_size=max_size,
                     max_queries=max_queries, loop=loop, setup=setup,
@@ -81,6 +86,7 @@ async def create_tables(con):
 
     # check for migration files
 
+    exception = None
     while True:
         version += 1
 
@@ -89,12 +95,19 @@ async def create_tables(con):
             log.info("applying migration script: {:08}".format(version))
             with open(fn) as migrate_file:
                 sql = migrate_file.read()
-                await con.execute(sql)
+                try:
+                    await con.execute(sql)
+                except Exception as e:
+                    version -= 1
+                    exception = e
+                    break
         else:
             version -= 1
             break
 
-    return await con.execute("UPDATE database_version SET version_number = $1", version)
+    await con.execute("UPDATE database_version SET version_number = $1", version)
+    if exception:
+        raise exception
 
 class HandlerDatabasePoolContext():
 
