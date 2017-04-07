@@ -21,14 +21,20 @@ def create_pool(dsn=None, *,
                 min_size=10,
                 max_size=10,
                 max_queries=50000,
+                max_inactive_connection_lifetime=300.0,
                 setup=None,
                 loop=None,
                 init=None,
                 **connect_kwargs):
-    if '_init' in asyncpg.pool.Pool.__slots__:
+    try:
+        # check for 0.10.0 support
+        from asyncpg.pool import PoolConnectionHolder
+        connect_kwargs['max_inactive_connection_lifetime'] = max_inactive_connection_lifetime
         connect_kwargs['init'] = init
-    elif init is not None:
-        raise DatabaseError("init only supported in asyncpg versions 0.9.0 and up")
+    except:
+        # check for 0.9.0 support
+        if '_init' in asyncpg.pool.Pool.__slots__:
+            connect_kwargs['init'] = init
     return SafePool(dsn,
                     min_size=min_size, max_size=max_size,
                     max_queries=max_queries, loop=loop, setup=setup,

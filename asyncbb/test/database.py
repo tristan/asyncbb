@@ -22,7 +22,15 @@ def requires_database(func=None):
                     await f
 
                 # wait for all the connections to be released
-                while self._app.connection_pool._con_count != self._app.connection_pool._queue.qsize():
+                if hasattr(self._app.connection_pool, '_con_count'):
+                    # pre 0.10.0
+                    con_count = lambda: self._app.connection_pool._con_count
+                elif hasattr(self._app.connection_pool, '_holders'):
+                    # post 0.10.0
+                    con_count = lambda: len(self._app.connection_pool._holders)
+                else:
+                    raise Exception("Don't know how to get connection pool count")
+                while con_count() != self._app.connection_pool._queue.qsize():
                     # if there are connections still in use, there should be some
                     # other things awaiting to be run. this simply pass control back
                     # to the ioloop to continue execution, looping until all the
