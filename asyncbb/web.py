@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 import configparser
 import logging
 import os
@@ -53,6 +54,11 @@ class Application(tornado.web.Application):
             from .redis import prepare_redis
             self.redis_connection_pool = prepare_redis(self.config['redis'])
 
+        max_workers = self.config['executor']['max_workers'] \
+                      if 'executor' in self.config and 'max_workers' in self.config['executor'] \
+                      else None
+        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
+
     def process_config(self):
 
         tornado.options.parse_command_line()
@@ -83,6 +89,9 @@ class Application(tornado.web.Application):
 
         if 'REDIS_URL' in os.environ:
             config['redis'] = {'url': os.environ['REDIS_URL']}
+
+        if 'EXECUTOR_MAX_WORKERS' in os.environ:
+            config['executor'] = {'max_workers': os.environ['EXECUTOR_MAX_WORKERS']}
 
         if 'COOKIE_SECRET' in os.environ:
             config['general']['cookie_secret'] = os.environ['COOKIE_SECRET']

@@ -51,3 +51,6 @@ class BaseHandler(JsonBodyMixin, tornado.web.RequestHandler):
                 rval['exc_info'] = traceback.format_exception(*kwargs["exc_info"])
         log.error(rval)
         self.write(rval)
+
+    def run_in_executor(self, func, *args):
+        return self.application.asyncio_loop.run_in_executor(self.application.executor, func, *args)
